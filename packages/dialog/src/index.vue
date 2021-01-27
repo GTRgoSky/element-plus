@@ -4,6 +4,7 @@
       name="dialog-fade"
       @after-enter="afterEnter"
       @after-leave="afterLeave"
+      @before-leave="beforeLeave"
     >
       <el-overlay
         v-show="visible"
@@ -27,7 +28,7 @@
           role="dialog"
           :aria-label="title || 'dialog'"
           :style="style"
-          @click="$event.stopPropagation()"
+          @click.stop=""
         >
           <div class="el-dialog__header">
             <slot name="title">

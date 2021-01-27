@@ -37,8 +37,9 @@ function useStore(): Store {
         }
       }
       instance.store.updateAllSelected()
-
-      instance.store.updateTableScrollY()
+      if (instance.$ready) {
+        instance.store.scheduleLayout()
+      }
     },
 
     insertColumn(states, column, index, parent) {
@@ -46,7 +47,15 @@ function useStore(): Store {
       const array = unref(states._columns)
 
       if (!parent) {
-        array.splice(index, 0, column)
+        if (array.length > index && (array[index] !== undefined)) {
+          array.splice(index, 0, column)
+          const nearlyEmptyIndex = array.findIndex((item, i) => i > index && item === undefined)
+          if (nearlyEmptyIndex > -1) {
+            array.splice(nearlyEmptyIndex, 1)
+          }
+        } else {
+          array[index] = column
+        }
         states._columns.value = array
       } else {
         if (parent && !parent.children) {
@@ -60,7 +69,6 @@ function useStore(): Store {
         states.selectable.value = column.selectable
         states.reserveSelection.value = column.reserveSelection
       }
-
       if (instance.$ready) {
         instance.store.updateColumns() // hack for dynamics insert column
         instance.store.scheduleLayout()
@@ -150,7 +158,7 @@ function useStore(): Store {
       instance.store.updateCurrentRow(row)
     },
   }
-  const commit = function (name, ...args) {
+  const commit = function(name, ...args) {
     const mutations = instance.store.mutations
     if (mutations[name]) {
       mutations[name].apply(instance, [instance.store.states].concat(args))
@@ -158,8 +166,8 @@ function useStore(): Store {
       throw new Error(`Action not found: ${name}`)
     }
   }
-  const updateTableScrollY = function () {
-    nextTick(instance.layout.updateScrollY.apply(instance.layout))
+  const updateTableScrollY = function() {
+    nextTick(() => instance.layout.updateScrollY.apply(instance.layout))
   }
   const watcher = useWatcher()
   return {
